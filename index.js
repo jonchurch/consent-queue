@@ -23,7 +23,7 @@ const generationLock = new Lock()
 
 const octokit = new Octokit({ auth: GITHUB_TOKEN });
 
-const ORGS = ['expressjs'];
+const ORGS = ['expressjs', 'pillarjs', 'jshttp'];
 
 marked.setOptions({
   gfm: true,
@@ -118,7 +118,7 @@ const generateHtml = async (orgs) => {
   mdContent += `| --- | --- | --- | --- | --- | --- |\n`;
 
   for (const item of allPRs) {
-    mdContent += `| ${item.org} | ${item.repo} | ${item.number} | ${item.title} | ${item.hoursOpen} | [View](${item.url}) |\n`;
+    mdContent += `| ${item.org} | ${item.repo} | ${item.number} | ${item.title} | ${item.hoursOpen} | <a href="${item.url}" target="_blank">View</a> |\n`;
   }
 
   // persist the md for now
