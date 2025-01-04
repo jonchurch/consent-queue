@@ -59,10 +59,10 @@ async function getPrs(orgs) {
 
   for (const org of orgs) {
     const repos = await getAllReposForOrg(org);
-    console.log(`got all repos for ${org}, count:${repos.length}`)
+    console.log(`got all repos for ${org}, count: ${repos.length}`)
     for (const repo of repos) {
       const prs = await getAllOpenPRs(org, repo.name);
-      console.log(`got all prs for ${repo.name}, count:${prs.length}`)
+      console.log(`got all prs for ${repo.name}, count: ${prs.length}`)
       for (const pr of prs) {
         const { data: fullPR } = await octokit.pulls.get({
           owner: org,
@@ -145,7 +145,6 @@ body {
   max-width: 900px;
   margin: 0 auto;
   padding: 45px;
-  background: #ffffff;
   border-radius: 6px;
   font-family: Arial, sans-serif;
 }
