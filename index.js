@@ -33,7 +33,8 @@ marked.setOptions({
 async function getAllReposForOrg(org) {
   return await octokit.paginate(octokit.repos.listForOrg, {
     org,
-    type: 'all',
+    // default to fetching only public repos, to prevent leaking private repos
+    type: process.env.REPO_TYPES ?? 'public',
     per_page: 100
   });
 }
