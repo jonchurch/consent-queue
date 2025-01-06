@@ -18,4 +18,15 @@ class Lock {
   }
 }
 
-module.exports.Lock = Lock 
+
+// Calculate hours open
+function hoursOpen(sinceDate) {
+  const diffMs = Date.now() - Date.parse(sinceDate);
+  const hours = diffMs / 3600000;
+  return hours.toFixed(2);
+}
+
+module.exports = {
+  Lock,
+  hoursOpen
+}

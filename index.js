@@ -2,13 +2,13 @@ require('dotenv').config()
 const fs = require('fs')
 const path = require('path')
 const express = require('express');
-const { Octokit } = require('@octokit/rest');
 const { marked } = require('marked');
-const { Lock } = require('./utils')
+
+const { GITHUB_TOKEN, PORT } = require('./config')
+const { getAllReposForOrg, getAllOpenPRs, getPRDetails } = require('./lib/github')
+const { Lock, hoursOpen } = require('./utils')
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 
 if (!GITHUB_TOKEN) {
   console.error('Please set GITHUB_TOKEN in environment variables.');
@@ -21,39 +21,12 @@ let lastGeneratedTime = 0;
 
 const generationLock = new Lock()
 
-const octokit = new Octokit({ auth: GITHUB_TOKEN });
-
 const ORGS = ['expressjs', 'pillarjs', 'jshttp'];
 
 marked.setOptions({
   gfm: true,
   breaks: true
 });
-
-async function getAllReposForOrg(org) {
-  return await octokit.paginate(octokit.repos.listForOrg, {
-    org,
-    // default to fetching only public repos, to prevent leaking private repos
-    type: process.env.REPO_TYPES ?? 'public',
-    per_page: 100
-  });
-}
-
-async function getAllOpenPRs(org, repo) {
-  return await octokit.paginate(octokit.pulls.list, {
-    owner: org,
-    repo,
-    state: 'open',
-    per_page: 100
-  });
-}
-
-// Calculate hours open
-function hoursOpen(sinceDate) {
-  const diffMs = Date.now() - Date.parse(sinceDate);
-  const hours = diffMs / 3600000;
-  return hours.toFixed(2);
-}
 
 async function getPrs(orgs) {
   const allPRs = [];
@@ -65,12 +38,8 @@ async function getPrs(orgs) {
       const prs = await getAllOpenPRs(org, repo.name);
       console.log(`got all prs for ${repo.name}, count: ${prs.length}`)
       for (const pr of prs) {
-        const { data: fullPR } = await octokit.pulls.get({
-          owner: org,
-          repo: repo.name,
-          pull_number: pr.number
-        });
 
+        const { data: fullPR } = await getPRDetails(org, repo, pr)
         // Only include if mergeable_state is "clean"
         if (fullPR.mergeable_state === 'clean') {
           // we aren't accounting for when a PR was marked ready for review
@@ -96,7 +65,7 @@ async function getPrs(orgs) {
 
 }
 
-async function serveIfValid(req, res, next) {
+async function serveIfValid(_req, res, next) {
   const now = Date.now();
 
   // Check if the file exists and is within the cache duration
@@ -161,7 +130,7 @@ body {
   fs.writeFileSync(HTML_FILE_PATH, html)
 }
 
-app.get('/', serveIfValid, async (req, res) => {
+app.get('/', serveIfValid, async (_req, res) => {
   try {
     await generationLock.run(async () => {
       await generateHtml(ORGS)
